@@ -14,7 +14,6 @@ adfgvx_table = [
 
 adfgvx_letters = "ADFGVX"
 
-
 def adfgvx_encrypt(plaintext, key):
     # Преобразуем текст в последовательность ADFGVX
     adfgvx_text = ''
@@ -36,34 +35,31 @@ def adfgvx_encrypt(plaintext, key):
     key_len = len(key)
     matrix = [adfgvx_text[i:i + key_len] for i in range(0, len(adfgvx_text), key_len)]
 
-    # Если последний блок короче ключа, оставляем его как есть (без паддинга)
     if len(matrix[-1]) < key_len:
-        matrix[-1] = matrix[-1]  # Никаких изменений
+        matrix[-1] = matrix[-1]
 
     # Сортируем столбцы по ключу
     sort_key_indx = sorted(range(len(key)), key=lambda x: key[x])
     ciphertext = ""
     for indx in sort_key_indx:
         for row in matrix:
-            if indx < len(row):  # Защита от индексации, если последний блок короче ключа
+            if indx < len(row):
                 ciphertext += row[indx]
 
     return ciphertext
-
+    
 def adfgvx_decrypt(ciphertext, key):
     key_len = len(key)
-    total_chars = len(ciphertext)
-    rows = total_chars // key_len
-    extra_chars = total_chars % key_len  # Последний неполный ряд
+    total = len(ciphertext)
+    rows = total // key_len
+    excees = total % key_len
 
     # Сортируем индексы ключа
     key_indx = list(range(len(key)))
     sort_key_indx = sorted(key_indx, key=lambda x: key[x])
 
-    # Определяем длину столбцов
-    col_lengths = [rows + (1 if i < extra_chars else 0) for i in range(key_len)]
-
     # Разделяем ciphertext на столбцы
+    col_lengths = [rows + (1 if i < excees else 0) for i in range(key_len)]
     ciphertext_col = {}
     indx = 0
     for sort_indx in sort_key_indx:
@@ -72,10 +68,8 @@ def adfgvx_decrypt(ciphertext, key):
 
     # Восстанавливаем исходный порядок столбцов
     orig_col = [ciphertext_col[i] for i in key_indx]
-
-    # Читаем строки по порядку
     adfgvx_text = ""
-    for i in range(rows + 1):  # До максимального количества строк
+    for i in range(rows + 1):
         for col in orig_col:
             if i < len(col):
                 adfgvx_text += col[i]

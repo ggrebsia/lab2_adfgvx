@@ -14,6 +14,7 @@ adfgvx_table = [
 
 adfgvx_letters = "ADFGVX"
 
+
 def adfgvx_encrypt(plaintext, key):
     # Преобразуем текст в последовательность ADFGVX
     adfgvx_text = ''
@@ -31,38 +32,38 @@ def adfgvx_encrypt(plaintext, key):
             messagebox.showwarning("Ошибка", f"Символ '{char}' отсутствует в таблице ADFGVX.")
             return ""
 
-    # Добавляем доп. символы для выравнивания матрицы
+    # Создаем матрицу по ключу
     key_len = len(key)
-    pad_len = (key_len - len(adfgvx_text) % key_len) % key_len
-    adfgvx_text += "X" * pad_len
+    matrix = [adfgvx_text[i:i + key_len] for i in range(0, len(adfgvx_text), key_len)]
 
-    # Создаем матрицу
-    rows = len(adfgvx_text) // key_len
-    matrix = [adfgvx_text[i * key_len:(i + 1) * key_len] for i in range(rows)]
+    # Если последний блок короче ключа, оставляем его как есть (без паддинга)
+    if len(matrix[-1]) < key_len:
+        matrix[-1] = matrix[-1]  # Никаких изменений
 
     # Сортируем столбцы по ключу
     sort_key_indx = sorted(range(len(key)), key=lambda x: key[x])
     ciphertext = ""
     for indx in sort_key_indx:
         for row in matrix:
-            ciphertext += row[indx]
+            if indx < len(row):  # Защита от индексации, если последний блок короче ключа
+                ciphertext += row[indx]
 
-    return ciphertext + str(pad_len)
+    return ciphertext
 
 def adfgvx_decrypt(ciphertext, key):
-    # Последний символ ciphertext — это длина padding
-    pad_len = int(ciphertext[-1])
-    ciphertext = ciphertext[:-1]
-
     key_len = len(key)
-    rows = len(ciphertext) // key_len
+    total_chars = len(ciphertext)
+    rows = total_chars // key_len
+    extra_chars = total_chars % key_len  # Последний неполный ряд
 
     # Сортируем индексы ключа
     key_indx = list(range(len(key)))
     sort_key_indx = sorted(key_indx, key=lambda x: key[x])
 
+    # Определяем длину столбцов
+    col_lengths = [rows + (1 if i < extra_chars else 0) for i in range(key_len)]
+
     # Разделяем ciphertext на столбцы
-    col_lengths = [rows] * key_len
     ciphertext_col = {}
     indx = 0
     for sort_indx in sort_key_indx:
@@ -71,11 +72,13 @@ def adfgvx_decrypt(ciphertext, key):
 
     # Восстанавливаем исходный порядок столбцов
     orig_col = [ciphertext_col[i] for i in key_indx]
-    adfgvx_text = "".join("".join(row) for row in zip(*orig_col))
 
-    # Убираем доп.символы
-    if pad_len > 0:
-        adfgvx_text = adfgvx_text[:-pad_len]
+    # Читаем строки по порядку
+    adfgvx_text = ""
+    for i in range(rows + 1):  # До максимального количества строк
+        for col in orig_col:
+            if i < len(col):
+                adfgvx_text += col[i]
 
     # Декодировка ADFGVX в исходный текст
     plaintext = ""
